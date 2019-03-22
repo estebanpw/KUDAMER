@@ -108,6 +108,10 @@ int main(int argc, char ** argv)
     }
     */
     //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
+    cudaSharedMemConfig shared_mem_conf;
+    ret = cudaDeviceGetSharedMemConfig(&shared_mem_conf);
+    if(ret != cudaSuccess){ fprintf(stdout, "[WARNING] Could not get shared memory configuration. Error: %d\n", ret); }
+    else { fprintf(stdout, "[INFO] Shared memory configuration is: %s\n", (shared_mem_conf == cudaSharedMemBankSizeFourByte) ? ("4 bytes") : ("8 bytes")); }
 
     
     
