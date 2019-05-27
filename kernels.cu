@@ -25,6 +25,9 @@ __constant__ uint64_t pow4_T[33]={3*1L, 3*4L, 3*16L, 3*64L, 3*256L, 3*1024L, 3*4
     (uint64_t)3*70368744177664L, (uint64_t)3*281474976710656L, (uint64_t)3*1125899906842624L, (uint64_t)3*4503599627370496L, (uint64_t)3*18014398509481984L,
     (uint64_t)3*72057594037927936L, (uint64_t) 3*288230376151711744L, (uint64_t) 3*1152921504606846976L, (uint64_t) 3*4611686018427387904L};
 
+typedef struct{
+	unsigned char nucl[4];
+} four_nucl;
 
 __global__ void kernel_register(unsigned long long int * table, const char * sequence) {
 	
@@ -61,12 +64,13 @@ __global__ void kernel_register(unsigned long long int * table, const char * seq
 			++kmer_start;
 			int_pos = kmer_start / BYTES_PER_REGISTER;
 
-			
+			/*
 			unsigned char val = (unsigned char) byte;
 			unsigned char multiplier = (val & 6) >> 1;
-			hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) multiplier;
+			hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(byte == 'N') bad = 0;
+			*/
 			
 			
 			/*
@@ -76,15 +80,15 @@ __global__ void kernel_register(unsigned long long int * table, const char * seq
 			if(byte == 'T') hash += pow4_T[k];
 			if(byte == 'N') bad = 0;
 			*/
-			/*
+			
 			
 
-			if(byte == 'A') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 0;
-			if(byte == 'C') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 1;
-			if(byte == 'G') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 2;
-			if(byte == 'T') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 3;
+			if(byte == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
+			if(byte == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
+			if(byte == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
+			if(byte == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 			if(byte == 'N') bad = 0;
-			*/
+			
 
 		}
 		//table[threadIdx.x + 32*i + 96 * blockIdx.x] = hash & bad;
@@ -201,12 +205,13 @@ __global__ void kernel_register_no_synchro_exp(unsigned long long int * table, c
 			++kmer_start;
 			int_pos = kmer_start / BYTES_PER_REGISTER;
 
-			
+			/*
 			unsigned char val = (unsigned char) byte;
 			unsigned char multiplier = (val & 6) >> 1;
-			hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) multiplier;
+			hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(byte == 'N') bad = 0;
+			*/
 			
 			
 			/*
@@ -217,13 +222,13 @@ __global__ void kernel_register_no_synchro_exp(unsigned long long int * table, c
 			if(byte == 'N') bad = 0;
 			*/
 			
-			/*
-			if(byte == 'A') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 0;
-			if(byte == 'C') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 1;
-			if(byte == 'G') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 2;
-			if(byte == 'T') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 3;
+			
+			if(byte == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
+			if(byte == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
+			if(byte == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
+			if(byte == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 			if(byte == 'N') bad = 0;
-			*/
+			
 
 		}
 		//table[threadIdx.x + 32*i + 96 * blockIdx.x] = hash & bad;
@@ -233,9 +238,6 @@ __global__ void kernel_register_no_synchro_exp(unsigned long long int * table, c
 		
 	}
 }
-
-
-
 
 
 // This kernel is to be executed with 32 threads per block 
@@ -278,22 +280,22 @@ __global__ void kernel_index32(unsigned long long int * table, const char * sequ
 			if(c == 'N') bad = 0;
 			*/
 			
-			
+			/*
 			if(c == 'A') hash += 0;
 			if(c == 'C') hash += pow4[k];
 			if(c == 'G') hash += pow4_G[k];
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
-			
+			*/
 			
 			
 
-			/*
+			
 			val = (unsigned char) sweet_pointer[threadIdx.x * 4 + k];
 			multiplier = (val & 6) >> 1;
 			hash += (1 << (2*k)) * (unsigned long long int) multiplier;
 			if(c == 'N') bad = 0;
-			*/
+			
 
 		}
 		//if(bad == 1) hash = 0;
@@ -301,6 +303,8 @@ __global__ void kernel_index32(unsigned long long int * table, const char * sequ
 		//table[threadIdx.x + blockDim.x * j + 224 * blockIdx.x] = hash;
 	}
 }
+
+
 
 // This kernel is to be executed with 64 threads per block 
 // Remember to set the block size to 64 !!!!!!!!
@@ -349,21 +353,21 @@ __global__ void kernel_index64(unsigned long long int * table, const char * sequ
 			if(c == 'T') hash += ((unsigned long long int)1 << (2*(31-k))) * (unsigned long long int) 3;
 			*/
 
-			
+			/*
 			if(c == 'A') hash += 0;
 			if(c == 'C') hash += pow4[k];
 			if(c == 'G') hash += pow4_G[k];
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
-			
+			*/
 			
 
-			/*
+			
 			val = (unsigned char) c;
 			multiplier = (val & 6) >> 1;
 			hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) multiplier;
 			if(c == 'N') bad = 0;
-			*/
+			
 			
 
 		}
@@ -386,27 +390,27 @@ __global__ void kernel_index_global32(unsigned long long int * table, const char
 
 		char c = sequence[threadIdx.x + k + blockIdx.x * blockDim.x];
 		/*
-		if(c == 'A') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 0;
-		if(c == 'C') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 1;
-		if(c == 'G') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 2;
-		if(c == 'T') hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) 3;
+		if(c == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
+		if(c == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
+		if(c == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
+		if(c == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 		if(c == 'N') bad = 0;
 		*/
-		
+		/*
 		if(c == 'A') hash += 0;
 		if(c == 'C') hash += pow4[k];
 		if(c == 'G') hash += pow4_G[k];
 		if(c == 'T') hash += pow4_T[k];
 		if(c == 'N') bad = 0;
-		
+		*/
 
-		/*
+		
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		
 	}
 
 	table[threadIdx.x + blockIdx.x * blockDim.x] = hash & bad;
@@ -423,21 +427,21 @@ __global__ void kernel_index_global64(unsigned long long int * table, const char
 
 		char c = sequence[threadIdx.x + k + blockIdx.x * blockDim.x];
 		
-		/*
+		
 		if(c == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
 		if(c == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
 		if(c == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
 		if(c == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 		if(c == 'N') bad = 0;
-		*/
 		
 		
+		/*
 		if(c == 'A') hash += 0;
 		if(c == 'C') hash += pow4[k];
 		if(c == 'G') hash += pow4_G[k];
 		if(c == 'T') hash += pow4_T[k];
 		if(c == 'N') bad = 0;
-
+		*/
 		
 
 		/*
@@ -455,7 +459,7 @@ __global__ void kernel_index_global64(unsigned long long int * table, const char
 
 __global__ void kernel_index_global_fast_hash(unsigned long long int * table, const char * sequence) {
 
-	unsigned long long int k, j, hash, my_byte;
+	unsigned long long int k, j, hash = 0, my_byte;
 	unsigned long long int bad = 0xFFFFFFFFFFFFFFFF;
 
 	for(k=0; k<32; k++){
@@ -463,12 +467,13 @@ __global__ void kernel_index_global_fast_hash(unsigned long long int * table, co
 		my_byte = threadIdx.x * 8 + k + blockIdx.x * blockDim.x * 8; // the 8 comes from each thread processing 8 kmers
 		char c = sequence[my_byte];
 
-		
+		/*
 		if(c == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
 		if(c == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
 		if(c == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
 		if(c == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 		if(c == 'N') bad = 0;
+		*/
 		
 
 		/*
@@ -478,13 +483,13 @@ __global__ void kernel_index_global_fast_hash(unsigned long long int * table, co
 		if(c == 'T') hash += pow4_T[k];
 		if(c == 'N') bad = 0;
 		*/
-		/*
+		
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
-		hash += ((unsigned long long int)1 << (2*k)) * (unsigned long long int) multiplier;
+		hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		
 		
 	}
 
@@ -495,12 +500,95 @@ __global__ void kernel_index_global_fast_hash(unsigned long long int * table, co
 		bad = 0xFFFFFFFFFFFFFFFF;
 
 		if(next_nucl == 'A') hash +=  4 * (hash - ((unsigned long long int)1 << (62)) * 0);
-		if(next_nucl == 'C') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)) * 0) + 1);
-		if(next_nucl == 'G') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)) * 0) + 2);
-		if(next_nucl == 'T') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)) * 0) + 3);
+		if(next_nucl == 'C') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)))) + 1;
+		if(next_nucl == 'G') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)))) + 2;
+		if(next_nucl == 'T') hash +=  4 * ((hash - ((unsigned long long int)1 << (62)))) + 3;
 		if(next_nucl == 'N') bad = 0;
 
 		table[threadIdx.x + blockIdx.x * blockDim.x*8 + blockDim.x * k] = hash & bad;
+	}
+}
+
+
+__global__ void kernel_index_global_fast_hash_on_shared(unsigned long long int * table, const char * sequence) {
+
+	unsigned long long int hash = 0; 
+	int my_byte, k;
+	unsigned long long int bad = 0xFFFFFFFFFFFFFFFF;
+
+	//if(threadIdx.x == 1 && blockIdx.x == 0) printf("ssize: %d\n", sizeof(unsigned long long int));
+
+	
+	//__shared__ unsigned long long int seq_shared[36]; // 288 bytes of sequence divided by 8 bytes per uint64_t () this is for 8 kmers per thread
+	__shared__ unsigned long long int seq_shared[21]; // 158 bytes of sequence divided by 8 bytes per uint64_t () this is for 4 kmers per thread
+
+	
+	//seq_shared[threadIdx.x] = ((unsigned long long int *) sequence)[threadIdx.x + blockIdx.x * 36]; // I thought it was 20 but it is 16. 20 bytes are needed but the ones between 16 and 20 are only used for the last kmer - so many are missing
+	if(threadIdx.x < 21) seq_shared[threadIdx.x] = ((unsigned long long int *) sequence)[threadIdx.x + blockIdx.x * 16]; // 4 kmers per thread is: 
+	//seq_shared[threadIdx.x] = ((unsigned long long int *) sequence)[threadIdx.x]; //256
+	//unsigned long long int fixed_pos = threadIdx.x + 288 * blockIdx.x;
+	char * sweet_pointer = (char *) seq_shared;
+	int lost[4];
+
+
+	my_byte = (threadIdx.x << 2);
+
+	for(k=0; k<32; k++){
+
+		//my_byte = threadIdx.x * 8 + k + blockIdx.x * blockDim.x * 8; // the 8 comes from each thread processing 8 kmers
+		//if(threadIdx.x == 31) printf("I am thread %d and going for byte %d which is at bank %d\n", threadIdx.x, my_byte, (my_byte / 4) % 32 );
+		char c = sweet_pointer[my_byte]; 
+		++my_byte;
+
+		/*
+		if(c == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
+		if(c == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
+		if(c == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
+		if(c == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
+		if(c == 'N') bad = 0;
+		*/
+		
+
+		
+		if(c == 'A') { hash += 0; if(k<3) lost[k] = 0; }
+		if(c == 'C') { hash += pow4[31-k]; if(k<3) lost[k] = 1; }
+		if(c == 'G') { hash += pow4_G[31-k]; if(k<3) lost[k] = 2; }
+		if(c == 'T') { hash += pow4_T[31-k]; if(k<3) lost[k] = 3; }
+		if(c == 'N') bad = 0;
+		
+		
+		
+		/*
+		unsigned char val = (unsigned char) c;
+		unsigned char multiplier = (val & 6) >> 1;
+		hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) multiplier;
+		//checker = checker | (val & (unsigned char) 8);
+		if(c == 'N') bad = 0;
+		*/
+		
+		
+		
+	}
+
+	
+	//table[threadIdx.x + blockIdx.x * blockDim.x * 8] = hash & bad;
+	table[threadIdx.x + blockIdx.x * blockDim.x * 4] = hash & bad;
+
+	
+	for(k=1; k<4; k++){
+		//char next_nucl = sequence[++my_byte];
+		char next_nucl = sweet_pointer[my_byte++];
+		bad = 0xFFFFFFFFFFFFFFFF;
+
+		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
+		if(next_nucl == 'C') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 1;
+		if(next_nucl == 'G') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 2;
+		if(next_nucl == 'T') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 3;
+		if(next_nucl == 'N') bad = 0;
+
+		//table[threadIdx.x + blockIdx.x * blockDim.x*8 + blockDim.x * k] = hash & bad;
+		table[threadIdx.x + blockIdx.x * blockDim.x*4 + blockDim.x * k] = hash & bad;
+		
 	}
 }
 
@@ -525,15 +613,16 @@ __global__ void kernel_index_global_coalesced(unsigned long long int * table, co
 			// Fetch INT from BYTE position
 			if((k+j) % 4 == 0) value = ((int *) sequence)[my_byte >> 2];
 
-			c = (char) (value >> ((my_byte % 4)*8));
+			c = (char) (value >> ((my_byte % 4) << 3));
 			
-			/*
+			
 			if(c == 'A') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 0;
 			if(c == 'C') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 1;
 			if(c == 'G') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 2;
 			if(c == 'T') hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) 3;
 			if(c == 'N') bad = 0;
-			*/
+			
+			
 			
 			
 			/*
@@ -543,13 +632,13 @@ __global__ void kernel_index_global_coalesced(unsigned long long int * table, co
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
 			*/
-			
+			/*
 			unsigned char val = (unsigned char) c;
 			unsigned char multiplier = (val & 6) >> 1;
 			hash += ((unsigned long long int)1 << (k << 1)) * (unsigned long long int) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(c == 'N') bad = 0;
-			
+			*/
 			
 			++my_byte;
 			++k;

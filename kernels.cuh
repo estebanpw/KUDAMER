@@ -19,6 +19,8 @@ __global__ void kernel_index_global64(unsigned long long int * table, const char
 
 __global__ void kernel_index_global_fast_hash(unsigned long long int * table, const char * sequence);
 
+__global__ void kernel_index_global_fast_hash_on_shared(unsigned long long int * table, const char * sequence);
+
 __global__ void kernel_index_global_coalesced(unsigned long long int * table, const char * sequence);
 
 __global__ void kernel_index_global_any_assembled(unsigned long long int * table, const char * sequence);

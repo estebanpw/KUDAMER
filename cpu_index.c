@@ -311,29 +311,31 @@ void compute_kmers(char * sequence, uint64_t * table_mem, uint64_t len){
             
             if (word_size < KMER_SIZE-1 || first_time == 1)
             {
-                hash = hash + quick_pow4byLetter((KMER_SIZE-1)-word_size, c);
+                //hash = hash + quick_pow4byLetter((KMER_SIZE-1)-word_size, c);
                 ++word_size;
             }
             else
             {
                 
-                hash = fast_hash_from_previous(curr_kmer, KMER_SIZE, c, hash);
+                //hash = fast_hash_from_previous(curr_kmer, KMER_SIZE, c, hash);
                 ++word_size;
             }
             
             
             if (word_size == KMER_SIZE)
             {
-                /*
-                table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_oldest_way_possible(KMER_SIZE, curr_kmer);
+                
+                //table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_oldest_way_possible(KMER_SIZE, curr_kmer);
+                table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_old_way(KMER_SIZE, curr_kmer);
                 memmove(&curr_kmer[0], &curr_kmer[1], KMER_SIZE-1);
                 --word_size;
-                */
                 
-
+                
+                /*
                 table_mem[pos - (KMER_SIZE-1)] = hash; 
                 --word_size;
                 first_time = 0;
+                */
                                 
                 
                 

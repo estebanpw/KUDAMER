@@ -16,6 +16,7 @@
 void init_args(int argc, char ** av, FILE ** query, unsigned * selected_device, FILE ** ref, FILE ** out, unsigned * write);
 void perfect_hash_to_word(char * word, uint64_t hash, uint64_t k);
 void print_kmers_to_file(uint64_t * table_mem, uint64_t table_size, FILE * fout);
+void print_kmers_to_file_paused(uint64_t * table_mem, uint64_t table_size);
 char * get_dirname(char * path);
 char * get_basename(char * path);
 
@@ -102,10 +103,11 @@ int main(int argc, char ** argv)
     // Set working size
     size_t threads_number = 32;
     size_t number_of_blocks;
+    //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte); // NOTICE: MAXWELL ignores this--
 
     
 
-    //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
+    
     cudaSharedMemConfig shared_mem_conf;
     ret = cudaDeviceGetSharedMemConfig(&shared_mem_conf);
     if(ret != cudaSuccess){ fprintf(stdout, "[WARNING] Could not get shared memory configuration. Error: %d\n", ret); }
@@ -143,7 +145,7 @@ int main(int argc, char ** argv)
         ////////////////////////////////////////////////////////////////////////////////
 
         // If shared memory index32
-        number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); // Blocks
 
         // If shared memory index64
         //number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); // Blocks, each block takes 32 ulongs, 8 bytes each
@@ -159,6 +161,9 @@ int main(int argc, char ** argv)
 
         // If index global fast from previous hash
         //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*8)); // Blocks
+
+        // If index global fast from previous hash using shared memory
+        number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); // Blocks
 
         // If register mode 32
         //number_of_blocks = (((items_read - KMER_SIZE + 1)/3) / threads_number); // Blocks
@@ -183,10 +188,11 @@ int main(int argc, char ** argv)
         
 
         // For index32 and 64 the translation to kmers is CORRECT
-        kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
@@ -211,10 +217,15 @@ int main(int argc, char ** argv)
         fprintf(stdout, "{WARM UP}[EXPERIMENTAL BANDWIDTH]   Achieved %e GB/s\n", ((double)items_read/((double)1000*1000*1000)) /((double)(clock()-begin)/CLOCKS_PER_SEC));
 
         begin = clock();
+        //kernel_index_global32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_coalesced<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         ret = cudaGetLastError();
         if(ret != cudaSuccess){ fprintf(stderr, "Error enqueuing indexing kernel: %d : %s\n", ret, cudaGetErrorString(cudaGetLastError())); exit(-1); }
@@ -238,6 +249,7 @@ int main(int argc, char ** argv)
     if(write == 1)
     {
         print_kmers_to_file(table_mem, query_len_bytes, out);
+        //print_kmers_to_file_paused(table_mem, query_len_bytes);
         fprintf(stdout, "[EXPERIMENTAL TIME (Including download)]        Indexing: t=%e\n", (double) (clock()-begin) / CLOCKS_PER_SEC);   
     }
     else
@@ -763,7 +775,7 @@ void init_args(int argc, char ** av, FILE ** query, unsigned * selected_device, 
 }
 
 void perfect_hash_to_word(char * word, uint64_t hash, uint64_t k){
-    
+    /*
     int64_t jIdx = (int64_t) (k-1), upIdx = 31;
     uint64_t v;
     while(jIdx >= 0){
@@ -776,7 +788,8 @@ void perfect_hash_to_word(char * word, uint64_t hash, uint64_t k){
         if(jIdx == 0) break;
         --jIdx;
     }
-    /*
+    */
+    
     int64_t jIdx = (int64_t) (k-1), upIdx = 0;
     uint64_t v;
     while(jIdx >= 0){
@@ -789,7 +802,7 @@ void perfect_hash_to_word(char * word, uint64_t hash, uint64_t k){
         if(jIdx == 0) break;
         --jIdx;
     }
-    */
+    
     
 }
 
@@ -810,6 +823,25 @@ void print_kmers_to_file(uint64_t * table_mem, uint64_t table_size, FILE * fout)
 
     fclose(fout);
 }
+
+void print_kmers_to_file_paused(uint64_t * table_mem, uint64_t table_size){
+    
+    uint64_t * debug = (uint64_t *) malloc(table_size*sizeof(uint64_t));
+    int ret = cudaMemcpy(debug, table_mem, table_size*sizeof(uint64_t), cudaMemcpyDeviceToHost);
+    if(ret != cudaSuccess){ fprintf(stderr, "DEBUG. Error: %d\n", ret); exit(-1); }
+    
+    uint64_t i;
+    char word[KMER_SIZE+1];
+    for(i=3060000;i<table_size;i++){
+        perfect_hash_to_word(word, debug[i], KMER_SIZE);
+        word[KMER_SIZE] = '\0';
+        fprintf(stdout, "#%"PRIu64", %s\n", i, word);
+        fprintf(stdout, "#%"PRIu64", %"PRIu64"\n", i, debug[i]);
+        if(i % 20 == 0) getchar();
+    } 
+
+}
+
 
 
 char * get_dirname(char * path){
