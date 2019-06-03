@@ -9,6 +9,10 @@ __global__ void kernel_register(unsigned long long int * table, const char * seq
 
 __global__ void kernel_register_no_synchro_exp(unsigned long long int * table, const char * sequence);
 
+__global__ void kernel_register_fast_hash_no_synchro_exp(unsigned long long int * table, const char * sequence);
+
+__global__ void kernel_register_fast_hash_no_synchro_exp_64(unsigned long long int * table, const char * sequence);
+
 __global__ void kernel_index32(unsigned long long int * table, const char * sequence);
 
 __global__ void kernel_index64(unsigned long long int * table, const char * sequence);

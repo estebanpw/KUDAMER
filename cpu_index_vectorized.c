@@ -373,9 +373,11 @@ void compute_kmers(char * sequence, uint64_t * table_mem, uint64_t len){
                 
                 //table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_oldest_way_possible(KMER_SIZE, curr_kmer);
                 table_mem[pos - (KMER_SIZE-1)] = hash_old_way_but_vectorized(KMER_SIZE, curr_kmer, char_values);
-                memmove(&curr_kmer[0], &curr_kmer[1], KMER_SIZE-1);
-                memmove(&char_values[0], &char_values[1], (KMER_SIZE-1) * sizeof(uint64_t));
-                --word_size;
+                //memmove(&curr_kmer[0], &curr_kmer[1], KMER_SIZE-1);
+                //memmove(&char_values[0], &char_values[1], (KMER_SIZE-1) * sizeof(uint64_t));
+                //--word_size;
+
+                word_size = 0;
                 
 
                 /*

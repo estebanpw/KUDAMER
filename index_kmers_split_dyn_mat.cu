@@ -163,10 +163,16 @@ int main(int argc, char ** argv)
         //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*8)); // Blocks
 
         // If index global fast from previous hash using shared memory
-        number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); // Blocks
 
         // If register mode 32
         //number_of_blocks = (((items_read - KMER_SIZE + 1)/3) / threads_number); // Blocks
+
+        // If register from fast hash 32
+        number_of_blocks = (((items_read - KMER_SIZE + 1)/6) / threads_number); // Blocks
+
+        // If register from fast hash 64
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)/6) / threads_number); // Blocks
 
         // If register mode 32 less synchro
         //number_of_blocks = (((items_read - KMER_SIZE + 1)/3) / threads_number); // Blocks
@@ -192,11 +198,13 @@ int main(int argc, char ** argv)
         //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_register_fast_hash_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_coalesced<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_any_simplest<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_any_assembled<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
@@ -223,8 +231,10 @@ int main(int argc, char ** argv)
         //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_register_fast_hash_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         ret = cudaGetLastError();

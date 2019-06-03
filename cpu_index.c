@@ -41,6 +41,7 @@ static uint64_t pow4_T[33]={3*1L, 3*4L, 3*16L, 3*64L, 3*256L, 3*1024L, 3*4096L, 
 void init_args(int argc, char ** av, FILE ** query, FILE ** ref, FILE ** out, unsigned * write);
 void perfect_hash_to_word(char * word, uint64_t hash, uint64_t k);
 uint64_t quick_pow4byLetter(uint64_t n, const char c);
+uint64_t fast_hash_from_previous_bitwise(const unsigned char nucl, uint64_t previous_hash);
 uint64_t fast_hash_from_previous(const unsigned char * word, uint64_t k, unsigned char next_nucl, uint64_t previous_hash);
 void print_kmers_to_file(uint64_t * table_mem, uint64_t table_size, FILE * fout);
 char * get_dirname(char * path);
@@ -249,6 +250,16 @@ uint64_t quick_pow4byLetter(uint64_t n, const char c){
     return 0;
 }
 
+uint64_t fast_hash_from_previous_bitwise(const unsigned char nucl, uint64_t previous_hash){
+    previous_hash = previous_hash << 2;
+
+    if((char) nucl == 'C') previous_hash = previous_hash + 1;
+    if((char) nucl == 'G') previous_hash = previous_hash + 2;
+    if((char) nucl == 'T') previous_hash = previous_hash + 3;
+
+    return previous_hash;
+}
+
 uint64_t fast_hash_from_previous(const unsigned char * word, uint64_t k, unsigned char next_nucl, uint64_t previous_hash){
     
     if((char) next_nucl == 'A') return 4 * (previous_hash - quick_pow4byLetter(k-1, (char) next_nucl));
@@ -307,17 +318,19 @@ void compute_kmers(char * sequence, uint64_t * table_mem, uint64_t len){
 
         if (c != 'N')
         {
-            curr_kmer[word_size] = (unsigned char) c;
+            //curr_kmer[word_size] = (unsigned char) c;
             
             if (word_size < KMER_SIZE-1 || first_time == 1)
             {
                 //hash = hash + quick_pow4byLetter((KMER_SIZE-1)-word_size, c);
+                hash = fast_hash_from_previous_bitwise(c, hash);
                 ++word_size;
             }
             else
             {
                 
                 //hash = fast_hash_from_previous(curr_kmer, KMER_SIZE, c, hash);
+                hash = fast_hash_from_previous_bitwise(c, hash);
                 ++word_size;
             }
             
@@ -326,9 +339,14 @@ void compute_kmers(char * sequence, uint64_t * table_mem, uint64_t len){
             {
                 
                 //table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_oldest_way_possible(KMER_SIZE, curr_kmer);
-                table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_old_way(KMER_SIZE, curr_kmer);
-                memmove(&curr_kmer[0], &curr_kmer[1], KMER_SIZE-1);
-                --word_size;
+                //table_mem[pos - (KMER_SIZE-1)] = hash_of_word_the_old_way(KMER_SIZE, curr_kmer);
+                table_mem[pos - (KMER_SIZE-1)] = hash;
+                //memmove(&curr_kmer[0], &curr_kmer[1], KMER_SIZE-1);
+                
+                // Overlapping
+                //--word_size;
+                // Non overlapping
+                word_size = 0;
                 
                 
                 /*
