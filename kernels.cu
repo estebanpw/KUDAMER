@@ -260,15 +260,18 @@ __global__ void kernel_register_no_synchro_exp(ULLI * table, const char * sequen
 	}
 }
 
+// Use this one with second mode of printing kmers
 
 __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const char * sequence) {
 	
+
+
 	int i, k;
 	ULLI hash = 0;
 
 	// Each will do 6 kmers
-	// So 32 threads do 32*6 = 192 bytes
-	// So last kmer processed starts at position 192
+	// So 32 threads do 32*6 = 192 kmers, starting at first 192 bytes
+	// So last kmer processed starts at position 191
 	// 192 / 8 = 24
 
 	ULLI value = ((ULLI *)sequence)[threadIdx.x + blockIdx.x * 24 ]; // 24*8 = 192 are the bytes corresponding to the 96 kmers used from the 128 byte transaction
@@ -311,9 +314,9 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 		
 		
 		
-		if(byte == 'C') hash += pow4[k];
-		if(byte == 'G') hash += pow4_G[k];
-		if(byte == 'T') hash += pow4_T[k];
+		if(byte == 'C') hash += pow4[31-k];
+		if(byte == 'G') hash += pow4_G[31-k];
+		if(byte == 'T') hash += pow4_T[31-k];
 		if(byte == 'N') bad = 0;
 		
 		
@@ -362,10 +365,20 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 
 		
 		hash = hash << 2;
+		
+		
 		if((char) byte == 'C') hash = hash + 1;
 		if((char) byte == 'G') hash = hash + 2;
 		if((char) byte == 'T') hash = hash + 3;
 		if((char) byte == 'N') bad = 0;
+		
+		/*
+		if((char) byte == 'C') hash = hash + (ULLI)4611686018427387904L;
+		if((char) byte == 'G') hash = hash + 2*(ULLI)4611686018427387904L;
+		if((char) byte == 'T') hash = hash + 3*(ULLI)4611686018427387904L;
+		if((char) byte == 'N') bad = 0;
+		*/
+		
 		
 
 		/*
@@ -381,6 +394,7 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 	}
 }
 
+// Use this one with second mode of printing kmers
 
 __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const char * sequence) {
 	
@@ -388,17 +402,25 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 	ULLI hash = 0;
 
 	// Each will do 6 kmers
-	// So 32 threads do 32*6 = 192 bytes
-	// So last kmer processed starts at position 192
-	// 192 / 8 = 24
+	// So 64 threads do 64*6 = 384 kmers, first 384 bytes
+	// So last kmer processed starts at position 383
+	// 384 / 8 = 48
 
 	// Notice that threads in a warp execute the same if else block so no divergence
 	ULLI value;
 
+
+	// The first warp (up to 32 threads) finishes on kmer starting 191
+	// Therefore our second warp bundle (threads 32-63) must start on position byte 192 which is 192/8 = 24 
+	// We can make it start at ULLI 24 by subtracting 8 to thread numbers, since they start on 32 -> 32-8 = 24 and so on
 	if(threadIdx.x < 32)
+	{
 		value = ((ULLI *)sequence)[threadIdx.x + blockIdx.x * 48 ]; // 48*8 = 384 are the bytes 
+	}
 	else
-		value = ((ULLI *)sequence)[threadIdx.x + blockIdx.x * 48 ]; // 48*8 = 384 are the bytes 
+	{
+		value = ((ULLI *)sequence)[threadIdx.x + blockIdx.x * 48 - 8]; // This makes it start at 192 bytes which is were thread 32 ends
+	}
 
 	ULLI temp_value;
 	char byte;
@@ -407,7 +429,7 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 
 	i = 0;
 
-	unsigned kmer_start = threadIdx.x * 6 + i; // 6 because of 6 kmers per thread
+	unsigned kmer_start = (threadIdx.x & 31) * 6 + i; // 6 because of 6 kmers per thread
 	unsigned int_pos = kmer_start >> 3; // 8 because bytes per register
 	hash = 0;
 	bad = 0xFFFFFFFFFFFFFFFF;
@@ -438,10 +460,10 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 		
 		
 		
-		if(byte == 'A') hash += 0;
-		if(byte == 'C') hash += pow4[k];
-		if(byte == 'G') hash += pow4_G[k];
-		if(byte == 'T') hash += pow4_T[k];
+		
+		if(byte == 'C') hash += pow4[31-k];
+		if(byte == 'G') hash += pow4_G[31-k];
+		if(byte == 'T') hash += pow4_T[31-k];
 		if(byte == 'N') bad = 0;
 		
 		
@@ -473,7 +495,7 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 		temp_value = __shfl_sync((1 << int_pos) || (1 << (threadIdx.x & 31)), value, int_pos);
 		byte = (char) (temp_value >> ((kmer_start & 7) << 3));
 		++kmer_start;
-		int_pos = kmer_start << 3;
+		int_pos = kmer_start >> 3;
 
 		bad = 0xFFFFFFFFFFFFFFFF;
 
