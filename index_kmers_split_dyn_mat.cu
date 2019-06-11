@@ -145,42 +145,41 @@ int main(int argc, char ** argv)
         ////////////////////////////////////////////////////////////////////////////////
 
         // If shared memory index32
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); // Blocks
-
+        number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number); // Blocks
         // If shared memory index64
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); // Blocks, each block takes 32 ulongs, 8 bytes each
-
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)/4) / threads_number); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number); // Blocks
         // If global memory 32
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / threads_number); // Blocks
-
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / threads_number); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number); // Blocks
         // If global memory 64
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / threads_number); // Blocks
-
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / threads_number); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number); // Blocks
         // If index global coalesced
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); // Blocks
-
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*4); // Blocks
+        // If register mode 32
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*3)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*3); // Blocks
+        
+        
+        
         // If index global fast from previous hash
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*8)); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*8)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*8); // Blocks
 
         // If index global fast from previous hash using shared memory
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*4); // Blocks
 
-        // If register mode 32
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)/3) / threads_number); // Blocks
+        // If index global fast from previous hash using shared memory 64
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*4)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*4); // Blocks
 
         // If register from fast hash 32
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)/6) / threads_number); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*6)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*6); // Blocks
 
         // If register from fast hash 64
-        number_of_blocks = (((items_read - KMER_SIZE + 1)/6) / threads_number); // Blocks
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*6)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*6); // Blocks
+
+
 
         // If register mode 32 less synchro
-        //number_of_blocks = (((items_read - KMER_SIZE + 1)/3) / threads_number); // Blocks
-
+        //number_of_blocks = (((items_read - KMER_SIZE + 1)) / (threads_number*3)); printf("[INFO] Processing: %"PRIu64"\n", number_of_blocks*threads_number*3); // Blocks
         // If float experiment
         //number_of_blocks = (((items_read)/4) / threads_number); // Blocks
-
-        
 
 
         // For all
@@ -194,17 +193,21 @@ int main(int argc, char ** argv)
         
 
         // For index32 and 64 the translation to kmers is CORRECT
-        //kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        //kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+
+        //kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared64_special<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_fast_hash_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        
         //kernel_index_global_coalesced<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_any_simplest<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_any_assembled<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
@@ -226,17 +229,21 @@ int main(int argc, char ** argv)
 
         begin = clock();
         //kernel_index_global32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_coalesced<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_less_synchro<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_register_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        
         //kernel_register_fast_hash_no_synchro_exp<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash_on_shared<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
-        //kernel_index32<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_index_global_fast_hash_on_shared64_special<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        //kernel_register_fast_hash_no_synchro_exp_64<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
         //kernel_index_global_fast_hash<<<number_of_blocks, threads_number>>>((unsigned long long int *) table_mem, query_mem);
+        
         ret = cudaGetLastError();
         if(ret != cudaSuccess){ fprintf(stderr, "Error enqueuing indexing kernel: %d : %s\n", ret, cudaGetErrorString(cudaGetLastError())); exit(-1); }
 

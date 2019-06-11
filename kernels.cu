@@ -6,6 +6,8 @@
 
 #define ULLI unsigned long long int
 
+
+
 // This kernel uses the register memory model
 
 __constant__ uint64_t pow4[33]={1L, 4L, 16L, 64L, 256L, 1024L, 4096L, 16384L, 65536L,
@@ -66,24 +68,31 @@ __global__ void kernel_register(ULLI * table, const char * sequence) {
 			++kmer_start;
 			int_pos = kmer_start / BYTES_PER_REGISTER;
 
-			/*
+
+			#ifdef MATHMODE
 			unsigned char val = (unsigned char) byte;
 			unsigned char multiplier = (val & 6) >> 1;
 			hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(byte == 'N') bad = 0;
-			*/
+			#endif
 			
 			
-			/*
-			if(byte == 'A') hash += 0;
+			
+			#ifdef CACHED
 			if(byte == 'C') hash += pow4[k];
 			if(byte == 'G') hash += pow4_G[k];
 			if(byte == 'T') hash += pow4_T[k];
 			if(byte == 'N') bad = 0;
-			*/
+			#endif
 			
 			
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (byte & 6) >> 1;
+			if(byte == 'N') bad = 0;
+			#endif
 			/*
 			if(byte == 'A') hash += ((ULLI)1 << (k << 1)) * (ULLI) 0;
 			if(byte == 'C') hash += ((ULLI)1 << (k << 1)) * (ULLI) 1;
@@ -92,11 +101,13 @@ __global__ void kernel_register(ULLI * table, const char * sequence) {
 			if(byte == 'N') bad = 0;
 			*/
 
+			#ifdef ADVANCED
 			hash = hash << 2;
 			if((char) byte == 'C') hash = hash + 1;
 			if((char) byte == 'G') hash = hash + 2;
 			if((char) byte == 'T') hash = hash + 3;
 			if((char) byte == 'N') bad = 0;
+			#endif
 
 		}
 		//table[threadIdx.x + 32*i + 96 * blockIdx.x] = hash & bad;
@@ -142,15 +153,14 @@ __global__ void kernel_register_less_synchro(ULLI * table, const char * sequence
 			++kmer_start;
 			int_pos = kmer_start / BYTES_PER_REGISTER;
 
-			/*
 			
+			#ifdef MATHMODE
 			unsigned char val = (unsigned char) byte;
 			unsigned char multiplier = (val & 6) >> 1;
 			hash += ((ULLI)1 << (2*k)) * (ULLI) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(byte == 'N') bad = 0;
-			
-			*/
+			#endif
 
 			/*
 			if(byte == 'A') hash += ((ULLI)1 << (2*k)) * (ULLI) 0;
@@ -160,19 +170,27 @@ __global__ void kernel_register_less_synchro(ULLI * table, const char * sequence
 			if(byte == 'N') bad = 0;
 			*/
 
-			/*
-			if(byte == 'A') hash += 0;
+			#ifdef CACHED
 			if(byte == 'C') hash += pow4[k];
 			if(byte == 'G') hash += pow4_G[k];
 			if(byte == 'T') hash += pow4_T[k];
 			if(byte == 'N') bad = 0;
-			*/
+			#endif
 
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (byte & 6) >> 1;
+			if(byte == 'N') bad = 0;
+			#endif
+
+			#ifdef ADVANCED
 			hash = hash << 2;
 			if((char) byte == 'C') hash = hash + 1;
 			if((char) byte == 'G') hash = hash + 2;
 			if((char) byte == 'T') hash = hash + 3;
 			if((char) byte == 'N') bad = 0;
+			#endif
 			
 
 		}
@@ -219,23 +237,28 @@ __global__ void kernel_register_no_synchro_exp(ULLI * table, const char * sequen
 			++kmer_start;
 			int_pos = kmer_start / BYTES_PER_REGISTER;
 
-			/*
+			#ifdef MATHMODE
 			unsigned char val = (unsigned char) byte;
 			unsigned char multiplier = (val & 6) >> 1;
 			hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(byte == 'N') bad = 0;
-			*/
+			#endif
 			
 			
-			/*
-			if(byte == 'A') hash += 0;
+			#ifdef CACHED
 			if(byte == 'C') hash += pow4[k];
 			if(byte == 'G') hash += pow4_G[k];
 			if(byte == 'T') hash += pow4_T[k];
 			if(byte == 'N') bad = 0;
-			*/
+			#endif
 			
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (byte & 6) >> 1;
+			if(byte == 'N') bad = 0;
+			#endif
 			/*
 			if(byte == 'A') hash += ((ULLI)1 << (k << 1)) * (ULLI) 0;
 			if(byte == 'C') hash += ((ULLI)1 << (k << 1)) * (ULLI) 1;
@@ -244,12 +267,13 @@ __global__ void kernel_register_no_synchro_exp(ULLI * table, const char * sequen
 			if(byte == 'N') bad = 0;
 			*/
 
+			#ifdef ADVANCED
 			hash = hash << 2;
 			if((char) byte == 'C') hash = hash + 1;
 			if((char) byte == 'G') hash = hash + 2;
 			if((char) byte == 'T') hash = hash + 3;
 			if((char) byte == 'N') bad = 0;
-			
+			#endif
 
 		}
 		//table[threadIdx.x + 32*i + 96 * blockIdx.x] = hash & bad;
@@ -261,6 +285,8 @@ __global__ void kernel_register_no_synchro_exp(ULLI * table, const char * sequen
 }
 
 // Use this one with second mode of printing kmers
+// Notice: it makes sense to use 6 kmers per thread because with 8 it requires 32 registers meaning that last kmer starts processing on 256
+// therefore there are not enough next registers
 
 __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const char * sequence) {
 	
@@ -303,23 +329,29 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 		++kmer_start;
 		int_pos = kmer_start >> 3;
 
-		/*
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) byte;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(byte == 'N') bad = 0;
-		*/
+		#endif
 		
 		
 		
-		
+		#ifdef CACHED
 		if(byte == 'C') hash += pow4[31-k];
 		if(byte == 'G') hash += pow4_G[31-k];
 		if(byte == 'T') hash += pow4_T[31-k];
 		if(byte == 'N') bad = 0;
+		#endif
 		
-		
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (byte & 6) >> 1;
+		if(byte == 'N') bad = 0;
+		#endif
 		/*
 		if(byte == 'A') hash += ((ULLI)1 << (k << 1)) * (ULLI) 0;
 		if(byte == 'C') hash += ((ULLI)1 << (k << 1)) * (ULLI) 1;
@@ -328,13 +360,13 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 		if(byte == 'N') bad = 0;
 		*/
 
-		/*
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) byte == 'C') hash = hash + 1;
 		if((char) byte == 'G') hash = hash + 2;
 		if((char) byte == 'T') hash = hash + 3;
 		if((char) byte == 'N') bad = 0;
-		*/
+		#endif
 		
 
 	}
@@ -353,7 +385,7 @@ __global__ void kernel_register_fast_hash_no_synchro_exp(ULLI * table, const cha
 
 		
 
-		bad = 0xFFFFFFFFFFFFFFFF;
+		//bad = 0xFFFFFFFFFFFFFFFF;
 
 		/*
 		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
@@ -450,21 +482,29 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 		++kmer_start;
 		int_pos = kmer_start >> 3;
 
-		/*
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) byte;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(byte == 'N') bad = 0;
-		*/
+		#endif
 		
 		
 		
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (byte & 6) >> 1;
+		if(byte == 'N') bad = 0;
+		#endif
 		
+		#ifdef CACHED
 		if(byte == 'C') hash += pow4[31-k];
 		if(byte == 'G') hash += pow4_G[31-k];
 		if(byte == 'T') hash += pow4_T[31-k];
 		if(byte == 'N') bad = 0;
+		#endif
 		
 		
 		
@@ -475,14 +515,15 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 		if(byte == 'T') hash += ((ULLI)1 << (k << 1)) * (ULLI) 3;
 		if(byte == 'N') bad = 0;
 		*/
+		
 
-		/*
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) byte == 'C') hash = hash + 1;
 		if((char) byte == 'G') hash = hash + 2;
 		if((char) byte == 'T') hash = hash + 3;
 		if((char) byte == 'N') bad = 0;
-		*/
+		#endif
 		
 
 	}
@@ -497,20 +538,22 @@ __global__ void kernel_register_fast_hash_no_synchro_exp_64(ULLI * table, const 
 		++kmer_start;
 		int_pos = kmer_start >> 3;
 
-		bad = 0xFFFFFFFFFFFFFFFF;
+		//bad = 0xFFFFFFFFFFFFFFFF;
 
-		/*
-		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
-		if(next_nucl == 'C') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 1;
-		if(next_nucl == 'G') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 2;
-		if(next_nucl == 'T') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 3;
-		if(next_nucl == 'N') bad = 0;
-		*/
+		
 		hash = hash << 2;
+
+		
 		if((char) byte == 'C') hash = hash + 1;
 		if((char) byte == 'G') hash = hash + 2;
 		if((char) byte == 'T') hash = hash + 3;
 		if((char) byte == 'N') bad = 0;
+		
+
+		/*
+		hash += (byte & 6) >> 1;
+		if(byte == 'N') bad = 0;
+		*/
 
 		//table[threadIdx.x + blockIdx.x * blockDim.x*8 + blockDim.x * k] = hash & bad;
 		table[threadIdx.x + (i << 6) + 384 * blockIdx.x] = hash & bad;
@@ -559,28 +602,35 @@ __global__ void kernel_index32(ULLI * table, const char * sequence) {
 			if(c == 'N') bad = 0;
 			*/
 			
-			/*
+			#ifdef CACHED
 			if(c == 'A') hash += 0;
 			if(c == 'C') hash += pow4[k];
 			if(c == 'G') hash += pow4_G[k];
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
-			*/
+			#endif
 			
-			
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (c & 6) >> 1;
+			if(c == 'N') bad = 0;
+			#endif
 
-			/*
+			#ifdef MATHMODE
 			val = (unsigned char) sweet_pointer[threadIdx.x * 4 + k];
 			multiplier = (val & 6) >> 1;
 			hash += (1 << (2*k)) * (ULLI) multiplier;
 			if(c == 'N') bad = 0;
-			*/
+			#endif
 
+			#ifdef ADVANCED
 			hash = hash << 2;
 			if((char) c == 'C') hash = hash + 1;
 			if((char) c == 'G') hash = hash + 2;
 			if((char) c == 'T') hash = hash + 3;
 			if((char) c == 'N') bad = 0;
+			#endif
 			
 
 		}
@@ -639,29 +689,37 @@ __global__ void kernel_index64(ULLI * table, const char * sequence) {
 			if(c == 'T') hash += ((ULLI)1 << (2*(31-k))) * (ULLI) 3;
 			*/
 
-			/*
+			
+			#ifdef CACHED
 			if(c == 'A') hash += 0;
 			if(c == 'C') hash += pow4[k];
 			if(c == 'G') hash += pow4_G[k];
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
-			*/
+			#endif
+
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (c & 6) >> 1;
+			if(c == 'N') bad = 0;
+			#endif
 			
 
-			/*
+			#ifdef MATHMODE
 			val = (unsigned char) c;
 			multiplier = (val & 6) >> 1;
 			hash += ((ULLI)1 << (2*k)) * (ULLI) multiplier;
 			if(c == 'N') bad = 0;
-			*/
+			#endif
 
-
+			#ifdef ADVANCED
 			hash = hash << 2;
 			if((char) c == 'C') hash = hash + 1;
 			if((char) c == 'G') hash = hash + 2;
 			if((char) c == 'T') hash = hash + 3;
 			if((char) c == 'N') bad = 0;
-			
+			#endif
 			
 
 		}
@@ -690,27 +748,37 @@ __global__ void kernel_index_global32(ULLI * table, const char * sequence) {
 		if(c == 'T') hash += ((ULLI)1 << (k << 1)) * (ULLI) 3;
 		if(c == 'N') bad = 0;
 		*/
-		/*
+		
+		#ifdef CACHED
 		if(c == 'A') hash += 0;
 		if(c == 'C') hash += pow4[k];
 		if(c == 'G') hash += pow4_G[k];
 		if(c == 'T') hash += pow4_T[k];
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 
-		/*
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (2*k)) * (ULLI) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) c == 'C') hash = hash + 1;
 		if((char) c == 'G') hash = hash + 2;
 		if((char) c == 'T') hash = hash + 3;
 		if((char) c == 'N') bad = 0;
+		#endif
 		
 	}
 
@@ -737,28 +805,37 @@ __global__ void kernel_index_global64(ULLI * table, const char * sequence) {
 		*/
 		
 		
-		/*
+		#ifdef CACHED
 		if(c == 'A') hash += 0;
 		if(c == 'C') hash += pow4[k];
 		if(c == 'G') hash += pow4_G[k];
 		if(c == 'T') hash += pow4_T[k];
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 		
 
-		/*
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (2*k)) * (ULLI) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) c == 'C') hash = hash + 1;
 		if((char) c == 'G') hash = hash + 2;
 		if((char) c == 'T') hash = hash + 3;
 		if((char) c == 'N') bad = 0;
+		#endif
 	}
 
 	table[threadIdx.x + blockIdx.x * blockDim.x] = hash & bad;
@@ -769,7 +846,6 @@ __global__ void kernel_index_global_fast_hash(ULLI * table, const char * sequenc
 
 	ULLI k, j, hash = 0, my_byte;
 	ULLI bad = 0xFFFFFFFFFFFFFFFF;
-	int lost[8];
 
 	my_byte = threadIdx.x * 8 + blockIdx.x * blockDim.x * 8;
 
@@ -787,30 +863,36 @@ __global__ void kernel_index_global_fast_hash(ULLI * table, const char * sequenc
 		*/
 		
 
-		// this one works perfect
-		/*
-		if(c == 'A') { hash += 0; if(k<8) lost[k] = 0; }
-		if(c == 'C') { hash += pow4[31-k]; if(k<8) lost[k] = 1; }
-		if(c == 'G') { hash += pow4_G[31-k]; if(k<8) lost[k] = 2; }
-		if(c == 'T') { hash += pow4_T[31-k]; if(k<8) lost[k] = 3; }
-		if(c == 'N') bad = 0;
-		*/
 		
-		/*
+		#ifdef CACHED
+		if(c == 'C') { hash += pow4[31-k];  }
+		if(c == 'G') { hash += pow4_G[31-k]; }
+		if(c == 'T') { hash += pow4_T[31-k]; }
+		if(c == 'N') bad = 0;
+		#endif
+		
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
-		if(k<8) lost[k] = (int) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 		
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) c == 'C') hash = hash + 1;
 		if((char) c == 'G') hash = hash + 2;
 		if((char) c == 'T') hash = hash + 3;
 		if((char) c == 'N') bad = 0;
-		
+		#endif
 		
 	}
 
@@ -818,7 +900,7 @@ __global__ void kernel_index_global_fast_hash(ULLI * table, const char * sequenc
 
 	for(k=1; k<8; k++){
 		char next_nucl = sequence[my_byte++];
-		bad = 0xFFFFFFFFFFFFFFFF;
+		//bad = 0xFFFFFFFFFFFFFFFF;
 
 		/*
 		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
@@ -845,16 +927,14 @@ __global__ void kernel_index_global_fast_hash_on_shared(ULLI * table, const char
 	int my_byte, k;
 	ULLI bad = 0xFFFFFFFFFFFFFFFF;
 
-	//if(threadIdx.x == 1 && blockIdx.x == 0) printf("ssize: %d\n", sizeof(ULLI));
-
 	
 	//__shared__ ULLI seq_shared[36]; // 288 bytes of sequence divided by 8 bytes per uint64_t () this is for 8 kmers per thread
-	__shared__ ULLI seq_shared[21]; // 158 bytes of sequence divided by 8 bytes per uint64_t () this is for 4 kmers per thread
+	__shared__ ULLI seq_shared[20]; // 158 bytes of sequence divided by 8 bytes per uint64_t () this is for 4 kmers per thread
 
 	
 	
-	//if(threadIdx.x < 21) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + blockIdx.x * 16]; // 4 kmers per thread is: 
-	if(threadIdx.x < 21) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + blockIdx.x << 4]; // 4 kmers per thread is: 
+	//if(threadIdx.x < 21) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + blockIdx.x * 16]; // 16 porque el proximo bloque empieza en byte 128 que partido 8 del ULLI es 16
+	if(threadIdx.x < 20) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + (blockIdx.x << 4)	]; // 4 kmers per thread is: 
 	char * sweet_pointer = (char *) seq_shared;
 	
 
@@ -881,43 +961,48 @@ __global__ void kernel_index_global_fast_hash_on_shared(ULLI * table, const char
 
 		
 		// this one works perfect
-		/*
-		if(c == 'A') hash += 0; 
+		#ifdef CACHED
 		if(c == 'C') hash += pow4[31-k]; 
 		if(c == 'G') hash += pow4_G[31-k]; 
 		if(c == 'T') hash += pow4_T[31-k]; 
 		if(c == 'N') bad = 0;
+		#endif
 		
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
 		
-		
-		
-		/*
+		#ifdef MATHMODE
 		unsigned char val = (unsigned char) c;
 		unsigned char multiplier = (val & 6) >> 1;
 		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 		//if(k<3) lost[k] = (int) multiplier;
 		//checker = checker | (val & (unsigned char) 8);
 		if(c == 'N') bad = 0;
-		*/
+		#endif
 
-		
+		#ifdef ADVANCED
 		hash = hash << 2;
 		if((char) c == 'C') hash = hash + 1;
 		if((char) c == 'G') hash = hash + 2;
 		if((char) c == 'T') hash = hash + 3;
 		if((char) c == 'N') bad = 0;
-		
+		#endif
 	}
 
 	
 	//table[threadIdx.x + blockIdx.x * blockDim.x * 4] = hash & bad;
-	table[threadIdx.x + blockIdx.x * blockDim.x << 2] = hash & bad;
+	table[threadIdx.x + blockIdx.x * (blockDim.x << 2)] = hash & bad;
+	
 
 	
 	for(k=1; k<4; k++){
 		//char next_nucl = sequence[++my_byte];
 		char next_nucl = sweet_pointer[my_byte++];
-		bad = 0xFFFFFFFFFFFFFFFF;
+		//bad = 0xFFFFFFFFFFFFFFFF;
 
 		/*
 		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
@@ -933,7 +1018,227 @@ __global__ void kernel_index_global_fast_hash_on_shared(ULLI * table, const char
 		if((char) next_nucl == 'N') bad = 0;
 
 		//table[threadIdx.x + blockIdx.x * blockDim.x*4 + blockDim.x * k] = hash & bad;
-		table[threadIdx.x + blockIdx.x * blockDim.x << 2 + blockDim.x * k] = hash & bad;
+		table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = hash & bad;
+		//table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = 100;
+		
+	}
+}
+
+
+__global__ void kernel_index_global_fast_hash_on_shared64(ULLI * table, const char * sequence) {
+
+	ULLI hash = 0; 
+	int my_byte, k;
+	ULLI bad = 0xFFFFFFFFFFFFFFFF;
+
+	// 64 threads
+	// 4 kmers per thread
+	// 64 * 4 = 256 kmers in total
+	// last kmer processed starts on position 255 and ends in position 255+32 = 287, so we need first 288 bytes = 36 ULLIs
+
+	
+	__shared__ ULLI seq_shared[36]; // 288 bytes of sequence divided by 8 bytes per uint64_t () this is for 4 kmers per thread with 64 threads
+
+	//if(threadIdx.x < 36) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + (blockIdx.x * 32)	]; // 4 kmers per thread is: 
+	if(threadIdx.x < 36) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + (blockIdx.x << 5)	]; // 4 kmers per thread is: 
+
+	__syncthreads(); // required since otherwise warps will desynchronize
+
+	char * sweet_pointer = (char *) seq_shared;
+	
+
+
+	my_byte = (threadIdx.x << 2);
+
+	char c;
+
+	for(k=0; k<32; k++){
+
+		
+		c = sweet_pointer[my_byte]; 
+		++my_byte;
+
+		/*
+		if(c == 'A'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 0; }
+		if(c == 'C'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 1; }
+		if(c == 'G'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 2; }
+		if(c == 'T'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 3; }
+		if(c == 'N') bad = 0;
+		*/
+
+		// this one works perfect
+		#ifdef CACHED
+		if(c == 'C') hash += pow4[31-k]; 
+		if(c == 'G') hash += pow4_G[31-k]; 
+		if(c == 'T') hash += pow4_T[31-k]; 
+		if(c == 'N') bad = 0;
+		#endif
+
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef MATHMODE
+		unsigned char val = (unsigned char) c;
+		unsigned char multiplier = (val & 6) >> 1;
+		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
+		//if(k<3) lost[k] = (int) multiplier;
+		//checker = checker | (val & (unsigned char) 8);
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef ADVANCED
+		hash = hash << 2;
+		if((char) c == 'C') hash = hash + 1;
+		if((char) c == 'G') hash = hash + 2;
+		if((char) c == 'T') hash = hash + 3;
+		if((char) c == 'N') bad = 0;
+		#endif
+		
+	}
+
+	
+	//table[threadIdx.x + blockIdx.x * blockDim.x * 4] = hash & bad; // the 4 is kmers per thread
+	table[threadIdx.x + blockIdx.x * (blockDim.x << 2)] = hash & bad;
+	//table[threadIdx.x + blockIdx.x * (blockDim.x << 2)] = 200;
+	
+
+	
+	for(k=1; k<4; k++){
+		//char next_nucl = sequence[++my_byte];
+		char next_nucl = sweet_pointer[my_byte++];
+		//bad = 0xFFFFFFFFFFFFFFFF;
+
+		/*
+		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
+		if(next_nucl == 'C') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 1;
+		if(next_nucl == 'G') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 2;
+		if(next_nucl == 'T') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 3;
+		if(next_nucl == 'N') bad = 0;
+		*/
+		hash = hash << 2;
+		if((char) next_nucl == 'C') hash = hash + 1;
+		if((char) next_nucl == 'G') hash = hash + 2;
+		if((char) next_nucl == 'T') hash = hash + 3;
+		if((char) next_nucl == 'N') bad = 0;
+
+		//table[threadIdx.x + blockIdx.x * blockDim.x*4 + blockDim.x * k] = hash & bad;
+		table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = hash & bad;
+		//table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = 100;
+		
+	}
+}
+
+
+__global__ void kernel_index_global_fast_hash_on_shared64_special(ULLI * table, const char * sequence) {
+
+	ULLI hash = 0; 
+	int my_byte, k;
+	ULLI bad = 0xFFFFFFFFFFFFFFFF;
+
+	// 64 threads
+	// 4 kmers per thread
+	// 64 * 4 = 256 kmers in total
+	// last kmer processed starts on position 255 and ends in position 255+32 = 287, so we need first 288 bytes = 36 ULLIs
+
+	
+	__shared__ int seq_shared[72]; // 288 bytes of sequence divided by 8 bytes per uint64_t () this is for 4 kmers per thread with 64 threads
+
+	//if(threadIdx.x < 36) seq_shared[threadIdx.x] = ((ULLI *) sequence)[threadIdx.x + (blockIdx.x * 32)	]; // 4 kmers per thread is: 
+	if(threadIdx.x < 36){
+		seq_shared[threadIdx.x] = ((int *) sequence)[threadIdx.x + (blockIdx.x << 6)];
+		seq_shared[36 + threadIdx.x] = ((int *) sequence)[36 + threadIdx.x + (blockIdx.x << 6)];
+	}
+
+	__syncthreads();
+
+	char * sweet_pointer = (char *) seq_shared;
+	
+
+
+	my_byte = (threadIdx.x << 2);
+
+	char c;
+
+	for(k=0; k<32; k++){
+
+		
+		c = sweet_pointer[my_byte]; 
+		++my_byte;
+
+		/*
+		if(c == 'A'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 0; }
+		if(c == 'C'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 1; }
+		if(c == 'G'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 2; }
+		if(c == 'T'){ hash += ((ULLI)1 << (k << 1)) * (ULLI) 3; }
+		if(c == 'N') bad = 0;
+		*/
+
+		// this one works perfect
+		#ifdef CACHED
+		if(c == 'A') hash += 0; 
+		if(c == 'C') hash += pow4[31-k]; 
+		if(c == 'G') hash += pow4_G[31-k]; 
+		if(c == 'T') hash += pow4_T[31-k]; 
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef MATHMODE
+		unsigned char val = (unsigned char) c;
+		unsigned char multiplier = (val & 6) >> 1;
+		hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
+		//if(k<3) lost[k] = (int) multiplier;
+		//checker = checker | (val & (unsigned char) 8);
+		if(c == 'N') bad = 0;
+		#endif
+
+		// Reduced math
+		#ifdef REDUCEDMATH
+		hash = hash << 2;
+		hash += (c & 6) >> 1;
+		if(c == 'N') bad = 0;
+		#endif
+
+		#ifdef ADVANCED
+		hash = hash << 2;
+		if((char) c == 'C') hash = hash + 1;
+		if((char) c == 'G') hash = hash + 2;
+		if((char) c == 'T') hash = hash + 3;
+		if((char) c == 'N') bad = 0;
+		#endif
+	}
+
+	
+	//table[threadIdx.x + blockIdx.x * blockDim.x * 4] = hash & bad; // the 4 is kmers per thread
+	table[threadIdx.x + blockIdx.x * (blockDim.x << 2)] = hash & bad;
+	//table[threadIdx.x + blockIdx.x * (blockDim.x << 2)] = 200;
+	
+
+	
+	for(k=1; k<4; k++){
+		//char next_nucl = sequence[++my_byte];
+		char next_nucl = sweet_pointer[my_byte++];
+		//bad = 0xFFFFFFFFFFFFFFFF;
+
+		/*
+		if(next_nucl == 'A') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 0;
+		if(next_nucl == 'C') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 1;
+		if(next_nucl == 'G') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 2;
+		if(next_nucl == 'T') hash =  4 * (hash - 4611686018427387904L * lost[k-1]) + 3;
+		if(next_nucl == 'N') bad = 0;
+		*/
+		hash = hash << 2;
+		if((char) next_nucl == 'C') hash = hash + 1;
+		if((char) next_nucl == 'G') hash = hash + 2;
+		if((char) next_nucl == 'T') hash = hash + 3;
+		if((char) next_nucl == 'N') bad = 0;
+
+		//table[threadIdx.x + blockIdx.x * blockDim.x*4 + blockDim.x * k] = hash & bad;
+		table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = hash & bad;
+		//table[threadIdx.x + blockIdx.x * (blockDim.x << 2) + blockDim.x * k] = 100;
 		
 	}
 }
@@ -961,30 +1266,46 @@ __global__ void kernel_index_global_coalesced(ULLI * table, const char * sequenc
 
 			c = (char) (value >> ((my_byte % 4) << 3));
 			
-			
+			/*
 			if(c == 'A') hash += ((ULLI)1 << (k << 1)) * (ULLI) 0;
 			if(c == 'C') hash += ((ULLI)1 << (k << 1)) * (ULLI) 1;
 			if(c == 'G') hash += ((ULLI)1 << (k << 1)) * (ULLI) 2;
 			if(c == 'T') hash += ((ULLI)1 << (k << 1)) * (ULLI) 3;
 			if(c == 'N') bad = 0;
+			*/
 			
 			
 			
-			
-			/*
-			if(c == 'A') hash += 0;
+			#ifdef CACHED
 			if(c == 'C') hash += pow4[k];
 			if(c == 'G') hash += pow4_G[k];
 			if(c == 'T') hash += pow4_T[k];
 			if(c == 'N') bad = 0;
-			*/
-			/*
+			#endif
+
+
+			#ifdef MATHMODE
 			unsigned char val = (unsigned char) c;
 			unsigned char multiplier = (val & 6) >> 1;
 			hash += ((ULLI)1 << (k << 1)) * (ULLI) multiplier;
 			//checker = checker | (val & (unsigned char) 8);
 			if(c == 'N') bad = 0;
-			*/
+			#endif
+
+			// Reduced math
+			#ifdef REDUCEDMATH
+			hash = hash << 2;
+			hash += (c & 6) >> 1;
+			if(c == 'N') bad = 0;
+			#endif
+
+			#ifdef ADVANCED
+			hash = hash << 2;
+			if(c == 'C') hash += 1;
+			if(c == 'G') hash += 2;
+			if(c == 'T') hash += 3;
+			if(c == 'N') bad = 0;
+			#endif
 			
 			++my_byte;
 			++k;
@@ -1009,252 +1330,6 @@ __global__ void kernel_index_global_any_simplest(ULLI * table, const char * sequ
 	table[threadIdx.x + blockIdx.x * blockDim.x] = hash;
 }
 
-
-__global__ void kernel_index_global_any_assembled(ULLI * table, const char * sequence) {
-		
-
-	ULLI k, j, hash = 0;
-		
-	ULLI bad = 0xFFFFFFFFFFFFFFFF;
-
-	char c = sequence[threadIdx.x + 0 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*0)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*0)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*0)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*0)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 1 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*1)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*1)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*1)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*1)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 2 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*2)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*2)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*2)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*2)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 3 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*3)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*3)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*3)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*3)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 4 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*4)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*4)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*4)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*4)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 5 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*5)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*5)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*5)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*5)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 6 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*6)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*6)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*6)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*6)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 7 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*7)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*7)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*7)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*7)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 8 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*8)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*8)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*8)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*8)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 9 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*9)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*9)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*9)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*9)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 10 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*10)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*10)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*10)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*10)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 11 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*11)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*11)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*11)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*11)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 12 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*12)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*12)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*12)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*12)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 13 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*13)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*13)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*13)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*13)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 14 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*14)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*14)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*14)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*14)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 15 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*15)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*15)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*15)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*15)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 16 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*16)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*16)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*16)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*16)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 17 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*17)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*17)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*17)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*17)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 18 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*18)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*18)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*18)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*18)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 19 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*19)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*19)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*19)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*19)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 20 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*20)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*20)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*20)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*20)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 21 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*21)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*21)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*21)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*21)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 22 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*22)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*22)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*22)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*22)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 23 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*23)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*23)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*23)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*23)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 24 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*24)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*24)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*24)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*24)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 25 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*25)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*25)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*25)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*25)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 26 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*26)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*26)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*26)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*26)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 27 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*27)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*27)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*27)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*27)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 28 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*28)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*28)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*28)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*28)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 29 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*29)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*29)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*29)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*29)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 30 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*30)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*30)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*30)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*30)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-
-	c = sequence[threadIdx.x + 31 + blockIdx.x * blockDim.x];
-	if(c == 'A') hash += ((ULLI)1 << (2*31)) * (ULLI) 0;
-	if(c == 'C') hash += ((ULLI)1 << (2*31)) * (ULLI) 1;
-	if(c == 'G') hash += ((ULLI)1 << (2*31)) * (ULLI) 2;
-	if(c == 'T') hash += ((ULLI)1 << (2*31)) * (ULLI) 3;
-	if(c == 'N') bad = 0;
-		
-		
-
-		/*
-		unsigned char val = (unsigned char) c;
-		unsigned char multiplier = (val & 6) >> 1;
-		hash += ((ULLI)1 << (2*k)) * (ULLI) multiplier;
-		//checker = checker | (val & (unsigned char) 8);
-		if(c == 'N') bad = 0;
-		*/
-	
-
-	table[threadIdx.x + blockIdx.x * blockDim.x] = hash & bad;
-	//table[threadIdx.x] = hash & bad;
-}
 
 __global__ void some_float_experiment(ULLI * table, const char * sequence) {
 		
